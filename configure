@@ -1,0 +1,8 @@
+#! /bin/bash
+
+# murmur3 hashing algorithm
+git clone https://github.com/PeterScott/murmur3.git
+cd murmur3
+make
+cd -
+pwd
