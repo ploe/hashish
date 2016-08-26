@@ -9,17 +9,22 @@ static void SetHash(char *key, void *out) {
 	MurmurHash3_x64_128(key, strlen(key), getpid(), out);
 }
 
+static uint64_t GetIndex(uint64_t hash[2], uint64_t mask) {
+	return hash[0] & mask;
+}
+
 /*	FindPair:
 	Finds the KVPair with [key] in [map]	*/
 	
 
 static ish_KVPair *FindPair(ish_Map *map, char *key) {
-	uint8_t hash[ish_UINT128_LENGTH];
+	uint64_t hash[2], index;
 	SetHash(key, hash);
+	index = GetIndex(hash, map->mask);
 
-	ish_KVPair *top = map->buckets[hash[0]], *pair;
+	ish_KVPair *top = map->buckets[index], *pair;
 	for (pair = top; pair != NULL; pair = pair->next) {
-		if (memcmp(hash, pair->hash, sizeof(uint8_t) * ish_UINT128_LENGTH) == 0)
+		if (memcmp(hash, pair->hash, ish_UINT128_LENGTH) == 0)
 			if (strcmp(key, pair->key) == 0) return pair;
 	}
 	return NULL;
@@ -40,18 +45,31 @@ static ish_KVPair *NewKVPair(ish_Map *map, char *key) {
 		}
 		strcpy(pair->key, key);
 
-
-		ish_KVPair *top = map->buckets[pair->hash[0]];
+		uint64_t index = GetIndex(pair->hash, map->mask);
+		ish_KVPair *top = map->buckets[index];
 		if (top) top->prev = pair;
 		pair->next = top;
 
-		map->buckets[pair->hash[0]] = pair;
+		map->buckets[index] = pair;
 	}
 
 	return pair;
 }
 
 /*	ish_Map methods.	*/
+
+ish_Map *ish_MapNew() {
+	ish_Map *map = calloc(1, sizeof(ish_Map));
+	if (map) {
+		map->mask = ish_DEFAULT_MASK;
+		map->buckets = calloc(map->mask, sizeof(ish_KVPair));
+		if (!map->buckets) {
+			free(map);
+			return NULL;
+		}
+	}
+	return map;
+}
 
 /*	ish_MapSetWithDestruct (public):
 	In [map] we set KVPair [key] to have [value] as its value and
@@ -91,7 +109,7 @@ void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *
 	if (!func) return;
 
 	int i;
-	for (i = 0; i < UINT8_MAX; i++) {
+	for (i = 0; i <= map->mask; i++) {
 		ish_KVPair *pair;
 		for (pair = map->buckets[i]; pair != NULL; pair = pair->next)
 			func(pair->key, pair->value, probe);

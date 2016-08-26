@@ -14,7 +14,8 @@ extern "C" {
 #include "murmur3.h"
 
 
-#define ish_UINT128_LENGTH 16
+#define ish_UINT128_LENGTH (sizeof(uint64_t)*2)
+#define ish_DEFAULT_MASK 0x0F
 
 /*	ish_KVPair:
 	struct that represents a key/value pair in the Map. A key value
@@ -30,7 +31,7 @@ extern "C" {
 	KVPair. 	*/
 
 typedef struct ish_KVPair {
-	uint8_t hash[ish_UINT128_LENGTH];
+	uint64_t hash[2];
 	char *key;
 	void *value;
 	int (*destruct)(void *);
@@ -44,10 +45,13 @@ typedef struct ish_KVPair {
 	A Map is an array of linked lists that are KVPairs.	*/
 
 typedef struct ish_Map {
-	ish_KVPair *buckets[UINT8_MAX];
+	ish_KVPair **buckets;
+	uint64_t mask;
 } ish_Map;
 
 /*	ish_Map methods.	*/
+ish_Map *ish_MapNew();
+
 int ish_MapSetWithDestruct(ish_Map *map, char *key, void *value, int (*destruct)(void *));
 #define ish_MapSet(map, key, value) ish_MapSetWithDestruct(map, key, value, NULL)
 
