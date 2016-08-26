@@ -6,7 +6,7 @@ int printkv(char *key, void *value, void *probe) {
 	return 0;
 }
 
-int main(int argc, char *argv) {
+int main(int argc, char *argv[]) {
 	ish_Map *map = ish_MapNew();
 	ish_MapSet(map, "hello world", "nah not really");
 	ish_MapSet(map, "myke", "Myke");
