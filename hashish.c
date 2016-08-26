@@ -111,7 +111,6 @@ void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *
 
 	int i;
 	for (i = 0; i <= map->mask; i++) {
-		printf("checking bucket '%d'\n", i);
 		ish_KVPair *pair;
 		for (pair = map->buckets[i]; pair != NULL; pair = pair->next)
 			func(pair->key, pair->value, probe);
