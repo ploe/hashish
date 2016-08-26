@@ -20,7 +20,7 @@ static uint64_t GetIndex(uint64_t hash[2], uint64_t mask) {
 static ish_KVPair *FindPair(ish_Map *map, char *key) {
 	uint64_t hash[2], index;
 	SetHash(key, hash);
-	index = GetIndex(hash, map->mask);
+	index = GetIndex(hash, map->mask) - 1;
 
 	ish_KVPair *top = map->buckets[index], *pair;
 	for (pair = top; pair != NULL; pair = pair->next) {
@@ -36,6 +36,7 @@ static ish_KVPair *FindPair(ish_Map *map, char *key) {
 static ish_KVPair *NewKVPair(ish_Map *map, char *key) {
 	ish_KVPair *pair = calloc(1, sizeof(ish_KVPair));
 	if (pair) {
+		puts("pair created");
 		SetHash(key, pair->hash);
 
 		pair->key = calloc(strlen(key) + 1, sizeof(char));
@@ -43,10 +44,13 @@ static ish_KVPair *NewKVPair(ish_Map *map, char *key) {
 			free(pair);
 			return NULL;
 		}
+		puts("pair key allocated");
 		strcpy(pair->key, key);
 
-		uint64_t index = GetIndex(pair->hash, map->mask);
+		uint64_t index = GetIndex(pair->hash, map->mask) - 1;
 		ish_KVPair *top = map->buckets[index];
+
+		puts("top get");
 		if (top) top->prev = pair;
 		pair->next = top;
 
@@ -80,8 +84,9 @@ ish_Map *ish_MapNew() {
 
 int ish_MapSetWithDestruct(ish_Map *map, char *key, void *value, int (*destruct)(void *)) {
 	ish_KVPair *pair;
+	puts(key);
 	if ((pair = FindPair(map, key)) == NULL) pair = NewKVPair(map, key);
-
+	puts("pair found");
 	if (pair) {
 		pair->value = value;
 		pair->destruct = destruct;
@@ -109,7 +114,8 @@ void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *
 	if (!func) return;
 
 	int i;
-	for (i = 0; i <= map->mask; i++) {
+	for (i = 0; i < map->mask; i++) {
+		printf("checking bucket '%d'\n", i);
 		ish_KVPair *pair;
 		for (pair = map->buckets[i]; pair != NULL; pair = pair->next)
 			func(pair->key, pair->value, probe);
