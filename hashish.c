@@ -155,6 +155,22 @@ void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *
 	}
 }
 
+/*	ish_MapFree (public):
+	Purges all the values from the [map] and then deallocates it.	*/
+
+void ish_MapFree(ish_Map *map) {
+	int i;
+	for (i = 0; i <= map->mask; i++) {
+		ish_KVPair *pair, *next;
+		for (pair = map->buckets[i]; pair != NULL; pair = next) {
+			next = pair->next;
+			KVPairFree(map, pair);
+		}
+	}
+	free(map->buckets);
+	free(map);
+}
+
 
 /*	ish_MapGet (public):
 	Returns the value from [key] in the [map].	*/

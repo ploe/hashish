@@ -37,5 +37,7 @@ int main(int argc, char *argv[]) {
 	printf("what's in 12? \"%s\"\n", (char *) ish_MapGet(map, "12"));
 
 	ish_MapForPairs(map, printkv);
+
+	ish_MapFree(map);
 	return 0;
 }

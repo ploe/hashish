@@ -51,6 +51,7 @@ typedef struct ish_Map {
 
 /*	ish_Map methods.	*/
 ish_Map *ish_MapNew();
+void ish_MapFree(ish_Map *map);
 
 int ish_MapRemove(ish_Map *map, char *key);
 
