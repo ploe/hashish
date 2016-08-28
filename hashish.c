@@ -16,7 +16,6 @@ static uint64_t GetIndex(uint64_t hash[2], uint64_t mask) {
 /*	FindPair:
 	Finds the KVPair with [key] in [map]	*/
 	
-
 static ish_KVPair *FindPair(ish_Map *map, char *key) {
 	uint64_t hash[2], index;
 	SetHash(key, hash);
@@ -30,10 +29,10 @@ static ish_KVPair *FindPair(ish_Map *map, char *key) {
 	return NULL;
 }
 
-/*	NewKVPair:
+/*	KVPairNew:
 	Creates a new KVPair at [key] on the [map]	*/
 
-static ish_KVPair *NewKVPair(ish_Map *map, char *key) {
+static ish_KVPair *KVPairNew(ish_Map *map, char *key) {
 	ish_KVPair *pair = calloc(1, sizeof(ish_KVPair));
 	if (pair) {
 		SetHash(key, pair->hash);
@@ -57,9 +56,30 @@ static ish_KVPair *NewKVPair(ish_Map *map, char *key) {
 	return pair;
 }
 
+static void KVPairFree(ish_Map *map, ish_KVPair *pair) {
+	/*	destroy the key	*/
+	free(pair->key);
 
+	/* 	deallocate the value if we have a destructor	*/
+	if (pair->destruct) pair->destruct(pair->value);
+
+	/*	rewire the pairs in the map	*/
+	if (pair->prev) pair->prev->next = pair->next;
+	else {
+       	/*      if it's the top node we have to rewire the bucket to point to it        */
+		uint64_t index = GetIndex(pair->hash, map->mask);
+		map->buckets[index] = pair->next;
+	}
+
+	if (pair->next) pair->next->prev = pair->prev;
+
+	free(pair);
+}
+
+/*	KVPairMarshal:
+	Print important information about the KVPair to stderr. Used for debug stuff.	*/
 static void KVPairMarshal(ish_KVPair *pair) {
-	printf("key:%s,address:%x,value:%x,prev:%x,next:%x,\n", pair->key, (int) pair, (int) pair->value, (int) pair->prev, (int) pair->next);
+	fprintf(stderr, "key:%s,address:%x,value:%x,prev:%x,next:%x,\n", pair->key, (int) pair, (int) pair->value, (int) pair->prev, (int) pair->next);
 }
 
 /*	ish_Map methods.	*/
@@ -81,32 +101,13 @@ ish_Map *ish_MapNew() {
 	return map;
 }
 
-/*	ish_MapDelete (public):
+/*	ish_MapRemove (public):
 	Deletes (i.e completely deallocates) the KVPair. */
 
-int ish_MapDelete(ish_Map *map, char *key) {
+int ish_MapRemove(ish_Map *map, char *key) {
 	ish_KVPair *pair = FindPair(map, key);
-	if (!pair) return 0; 
-
-	/*	destroy the key	*/
-	free(pair->key);
-	pair->key = NULL;
-
-	/* 	deallocate the value if we hav a destructor	*/
-	if (pair->destruct) pair->destruct(pair->value);
-
-	/*	rewire the pairs in the map	*/
-	if (pair->prev) pair->prev->next = pair->next;
-	else {
-	/*	if it's the top node we have to rewire the bucket to point to it	*/
-		uint64_t index = GetIndex(pair->hash, map->mask);
-		map->buckets[index] = pair->next;
-	}
-
-	if (pair->next) pair->next->prev = pair->prev;
-
-	free(pair);
-
+	if (!pair) return 0;
+	KVPairFree(map, pair);	
 	return 1;
 }
 
@@ -119,7 +120,7 @@ int ish_MapDelete(ish_Map *map, char *key) {
 
 int ish_MapSetWithDestruct(ish_Map *map, char *key, void *value, int (*destruct)(void *)) {
 	ish_KVPair *pair;
-	if ((pair = FindPair(map, key)) == NULL) pair = NewKVPair(map, key);
+	if ((pair = FindPair(map, key)) == NULL) pair = KVPairNew(map, key);
 	if (pair) {
 		if (pair->value && pair->destruct) pair->destruct(pair->value);
 		pair->value = value;
@@ -154,10 +155,13 @@ void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *
 	}
 }
 
+
+/*	ish_MapGet (public):
+	Returns the value from [key] in the [map].	*/
+
 void *ish_MapGet(ish_Map *map, char *key) {
 	ish_KVPair *pair = FindPair(map, key);
 	if (pair) return pair->value;
 	return NULL;
 }
 
-#undef ish_UINT128_LENGTH

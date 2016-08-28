@@ -28,9 +28,9 @@ int main(int argc, char *argv[]) {
 	ish_MapSet(map, "16", "hard day's night");
 	ish_MapSet(map, "17", "help");
 
-	ish_MapDelete(map, "7");
-	ish_MapDelete(map, "8");
-	ish_MapDelete(map, "9");
+	ish_MapRemove(map, "7");
+	ish_MapRemove(map, "8");
+	ish_MapRemove(map, "9");
 	
 	printf("what in 7? \"%s\"\n", (char *) ish_MapGet(map, "7"));
 	printf("what's in 17? \"%s\"\n", (char *) ish_MapGet(map, "17"));
