@@ -50,8 +50,8 @@ typedef struct ish_Map {
 } ish_Map;
 
 /*	ish_Map methods.	*/
-#define ish_MapNew() ish_MapNewWithMask(ish_DEFAULT_MASK) 
 ish_Map *ish_MapNewWithMask(uint64_t mask);
+#define ish_MapNew() ish_MapNewWithMask(ish_DEFAULT_MASK) 
 void ish_MapFree(ish_Map *map);
 
 int ish_MapRemove(ish_Map *map, char *key);
@@ -63,6 +63,10 @@ void *ish_MapGet(ish_Map *map, char *key);
 
 void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *probe);
 #define ish_MapForPairs(key, value) ish_MapProbePairs(key, value, NULL)
+
+
+ish_Map *ish_MapGrow(ish_Map *old);
+ish_Map *ish_MapShrink(ish_Map *old);
 
 #endif
 

@@ -37,6 +37,19 @@ int main(int argc, char *argv[]) {
 	printf("what's in 12? \"%s\"\n", (char *) ish_MapGet(map, "12"));
 
 	ish_MapForPairs(map, printkv);
+	
+	int i;
+	for (i = 1; i <= 5; i++) {
+		map = ish_MapGrow(map);
+		printf("\nMap grown to %04X...\n", (unsigned int) map->mask);
+		ish_MapForPairs(map, printkv);
+	}
+
+	for (i = 1; i <= 5; i++) {
+		map = ish_MapShrink(map);
+		printf("\nMap shrunk to %04X...\n", (unsigned int) map->mask);
+		ish_MapForPairs(map, printkv);
+	}
 
 	ish_MapFree(map);
 	return 0;

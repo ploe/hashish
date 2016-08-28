@@ -104,6 +104,52 @@ ish_Map *ish_MapNewWithMask(uint64_t mask) {
 	return map;
 }
 
+/*	ish_CopyMap (public):
+	Copy the contents on one [old] in to [new].	
+
+	Any values that are in [new] that are overwritten will have the
+	destructors called for them. Any values that aren't will remain
+	in memory, untouched.	*/
+
+int ish_CopyMap(ish_Map *old, ish_Map *new) {
+	int i;
+	for (i = 0; i <= old->mask; i++) {
+		ish_KVPair *pair;
+		for (pair = old->buckets[i]; pair != NULL; pair = pair->next) {
+			if(!ish_MapSetWithDestruct(new, pair->key, pair->value, pair->destruct)) return 0;
+		}
+	}
+	return 1;
+}
+
+static ish_Map *MapRehash(ish_Map *old, uint64_t mask) {
+	ish_Map *new = ish_MapNewWithMask(mask);
+	if (!new) return old;
+
+	if(!ish_CopyMap(old, new)) {
+		ish_MapFree(new);
+		return old;
+	}
+
+	ish_MapFree(old);
+	return new;
+}
+
+ish_Map *ish_MapGrow(ish_Map *old) {
+	uint64_t mask = old->mask;
+	mask <<= 1;
+	mask += 1;
+
+	return MapRehash(old, mask);
+}
+
+ish_Map *ish_MapShrink(ish_Map *old) {
+	uint64_t mask = old->mask;
+	mask >>= 1;
+
+	return MapRehash(old, mask);
+}
+
 /*	ish_MapRemove (public):
 	Deletes (i.e completely deallocates) the KVPair. */
 
