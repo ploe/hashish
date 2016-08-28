@@ -50,7 +50,8 @@ typedef struct ish_Map {
 } ish_Map;
 
 /*	ish_Map methods.	*/
-ish_Map *ish_MapNew();
+#define ish_MapNew() ish_MapNewWithMask(ish_DEFAULT_MASK) 
+ish_Map *ish_MapNewWithMask(uint64_t mask);
 void ish_MapFree(ish_Map *map);
 
 int ish_MapRemove(ish_Map *map, char *key);

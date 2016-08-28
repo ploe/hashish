@@ -84,15 +84,18 @@ static void KVPairMarshal(ish_KVPair *pair) {
 
 /*	ish_Map methods.	*/
 
-/*	ish_MapNew (public):
- 	We allocate and initialise a new ish_Map. If it can't be allocated
-	the method returns NULL. */
+/*	ish_MapNewWithMask (public):
+ 	We allocate and initialise a new ish_Map using [mask] for the number of 
+	buckets.  If it can't be allocated the method returns NULL.
 
-ish_Map *ish_MapNew() {
+	Even though it's public I'd recommend using the macro ish_MapNew as it 
+	calls the same, but with the [mask] set to the default value.	*/
+
+ish_Map *ish_MapNewWithMask(uint64_t mask) {
 	ish_Map *map = calloc(1, sizeof(ish_Map));
 	if (map) {
-		map->mask = ish_DEFAULT_MASK;
-		map->buckets = calloc(map->mask + 1, sizeof(ish_KVPair));
+		map->mask = mask;
+		map->buckets = calloc(mask + 1, sizeof(ish_KVPair));
 		if (!map->buckets) {
 			free(map);
 			return NULL;
@@ -113,10 +116,10 @@ int ish_MapRemove(ish_Map *map, char *key) {
 
 /*	ish_MapSetWithDestruct (public):
 	In [map] we set KVPair [key] to have [value] as its value and
-	destruct as its destruct.
+	[destruct] as its destruct.
 
 	As part of the library there is a macro ish_SetMap, which passes a NULL 
-	destructor.	*/
+	destruct.	*/
 
 int ish_MapSetWithDestruct(ish_Map *map, char *key, void *value, int (*destruct)(void *)) {
 	ish_KVPair *pair;
@@ -156,7 +159,7 @@ void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *
 }
 
 /*	ish_MapFree (public):
-	Purges all the values from the [map] and then deallocates it.	*/
+	Purges all the KVPairs from the [map] and then deallocates it.	*/
 
 void ish_MapFree(ish_Map *map) {
 	int i;
@@ -170,7 +173,6 @@ void ish_MapFree(ish_Map *map) {
 	free(map->buckets);
 	free(map);
 }
-
 
 /*	ish_MapGet (public):
 	Returns the value from [key] in the [map].	*/
