@@ -57,8 +57,9 @@ static ish_KVPair *NewKVPair(ish_Map *map, char *key) {
 	return pair;
 }
 
+
 static void KVPairMarshal(ish_KVPair *pair) {
-	printf("%s(%x) value:%s, prev:%x, next:%x,\n", pair->key, pair, pair->value, pair->prev, pair->next);
+	printf("key:%s,address:%x,value:%x,prev:%x,next:%x,\n", pair->key, (int) pair, (int) pair->value, (int) pair->prev, (int) pair->next);
 }
 
 /*	ish_Map methods.	*/
@@ -85,7 +86,7 @@ ish_Map *ish_MapNew() {
 
 int ish_MapDelete(ish_Map *map, char *key) {
 	ish_KVPair *pair = FindPair(map, key);
-	if (!pair) return 0;
+	if (!pair) return 0; 
 
 	/*	destroy the key	*/
 	free(pair->key);
@@ -105,6 +106,7 @@ int ish_MapDelete(ish_Map *map, char *key) {
 	if (pair->next) pair->next->prev = pair->prev;
 
 	free(pair);
+
 	return 1;
 }
 
@@ -119,10 +121,10 @@ int ish_MapSetWithDestruct(ish_Map *map, char *key, void *value, int (*destruct)
 	ish_KVPair *pair;
 	if ((pair = FindPair(map, key)) == NULL) pair = NewKVPair(map, key);
 	if (pair) {
+		if (pair->value && pair->destruct) pair->destruct(pair->value);
 		pair->value = value;
 		pair->destruct = destruct;
 		return 1;
-
 	}
 	return 0;
 }
@@ -150,6 +152,12 @@ void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *
 		for (pair = map->buckets[i]; pair != NULL; pair = pair->next)
 			func(pair->key, pair->value, probe);
 	}
+}
+
+void *ish_MapGet(ish_Map *map, char *key) {
+	ish_KVPair *pair = FindPair(map, key);
+	if (pair) return pair->value;
+	return NULL;
 }
 
 #undef ish_UINT128_LENGTH

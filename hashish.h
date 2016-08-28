@@ -57,6 +57,8 @@ int ish_MapDelete(ish_Map *map, char *key);
 int ish_MapSetWithDestruct(ish_Map *map, char *key, void *value, int (*destruct)(void *));
 #define ish_MapSet(map, key, value) ish_MapSetWithDestruct(map, key, value, NULL)
 
+void *ish_MapGet(ish_Map *map, char *key);
+
 void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *probe);
 #define ish_MapForPairs(key, value) ish_MapProbePairs(key, value, NULL)
 
