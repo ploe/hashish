@@ -52,6 +52,8 @@ typedef struct ish_Map {
 /*	ish_Map methods.	*/
 ish_Map *ish_MapNew();
 
+int ish_MapDelete(ish_Map *map, char *key);
+
 int ish_MapSetWithDestruct(ish_Map *map, char *key, void *value, int (*destruct)(void *));
 #define ish_MapSet(map, key, value) ish_MapSetWithDestruct(map, key, value, NULL)
 
@@ -63,5 +65,3 @@ void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *
 #ifdef __cplusplus
 }
 #endif
-
-

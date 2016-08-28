@@ -59,6 +59,10 @@ static ish_KVPair *NewKVPair(ish_Map *map, char *key) {
 
 /*	ish_Map methods.	*/
 
+/*	ish_MapNew (public):
+ 	We allocate and initialise a new ish_Map. If it can't be allocated
+	the method returns NULL. */
+
 ish_Map *ish_MapNew() {
 	ish_Map *map = calloc(1, sizeof(ish_Map));
 	if (map) {
@@ -70,6 +74,26 @@ ish_Map *ish_MapNew() {
 		}
 	}
 	return map;
+}
+
+int ish_MapDelete(ish_Map *map, char *key) {
+	printf("deleting key %s\n", key);
+	ish_KVPair *pair = FindPair(map, key);
+	if (!pair) return 0;
+
+	/*	destroy the key	*/
+	free(pair->key);
+	pair->key = NULL;
+
+	/* 	deallocate the value if we hav a destructor	*/
+	if (pair->destruct) pair->destruct(pair->value);
+
+	/*	rewire the nodes in the map	*/
+	if (pair->prev) pair->prev->next = pair->next;
+	if (pair->next) pair->next->prev = pair->prev;
+
+	free(pair);
+	return 1;
 }
 
 /*	ish_MapSetWithDestruct (public):
@@ -116,6 +140,5 @@ void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *
 			func(pair->key, pair->value, probe);
 	}
 }
-
 
 #undef ish_UINT128_LENGTH
