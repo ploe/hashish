@@ -20,44 +20,50 @@ There is a bundled example app that you can build by doing a `make dev` - should
 
 ## How do I get started using it?
 
-Make sure you include the library with an `#include "hashish"` directive.
+Include the library.
+
+```c
+#include "hashish"
+```
 
 The basic type in hashish is an `ish_Map` to create one you need to use the `ish_MapNew` function. See below.
 
-```
+```c
 	ish_Map *map = ish_MapNew();
 ```
 
 If `map` is not `NULL` then congratulations, you've got a freshly allocated `ish_Map`.
 
-To put stuff in `map` we can do use the `ish_MapSet` function.
+To put stuff in `map` we can use the `ish_MapSet` function.
 
-```
+```c
 	ish_MapSet(map, "my key", &value);
 ```
 
-This will set the `my key` in the `map` to the address of `value`. All `key-value` pairs in `hashish` are `char *` keys and `void *` values, this is so you can use the a `map` to point to any arbitrary object.
+This will set the `my key` in the `map` to the address of `value`. 
+
+All `key-value` pairs in `hashish` are `char *` keys and `void *` values, this is so you can use the a `map` to point to any arbitrary object.
 
 
 Let's stick a bunch of `key-value pairs` in our `map`.
 
-```
+```c
 	ish_MapSet(map, "matthew", "hi");
 	ish_MapSet(map, "mark", "hiya");
 	ish_MapSet(map, "luke", "hey");
 	ish_MapSet(map, "ringo", "hullo");
 ```
 
-To pull the values out we'd use the `ish_MapGet` function.
+To pull the values out of `map` we use the `ish_MapGet` function.
 
-```
+```c
 	char *msg = (char *) ish_MapGet(map, "ringo");
 	printf("%s, world", msg);
 ```
 
 If you don't like what you put in the `map` you can always overwrite it with another `ish_MapSet` or get rid of it completely with an `ish_MapRemove`
 
-```
+```c
 	puts(ish_MapGet(map, "mark"));		// returns "hiya"
 	ish_MapSet(map, mark, "bye");
 	puts(ish_MapGet(map, "mark"));		// returns "bye"
@@ -69,7 +75,7 @@ If you don't like what you put in the `map` you can always overwrite it with ano
 
 Once you're done with the `map` you can deallocate it and its `key-value pairs` by using the `ish_MapFree` function.
 
-```
+```c
 	ish_MapFree(map);
 ```
 
