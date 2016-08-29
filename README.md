@@ -81,6 +81,111 @@ Once you're done with the `map` you can deallocate it and its `key-value pairs` 
 
 ## Methods
 
+### ish_MapForPairs(map, func)
+
+In **map** we iterate over all of the `key-value pairs` and call **func** on each.
+
+The signature for **func** is `int func(char *[key], void *[value], void *[probe])`
+   - **key** is the key of the `key-value pair`.
+   - **value** is the value of the `key-value pair`.
+   - **probe** is a pointer to an object that you want passing when **func** is called.
+
+This is a macro for `ish_MapProbePairs` but it sets the probe to NULL.
+
+### ish_MapFree(map)
+
+Purges all the `key-value pairs` from the **map** and then deallocates it.
+
+If a destructor is set for the `key-value pair` it will be called before being deallocated.
+
+```c
+	ish_Map *map = ish_MapNew();
+	ish_MapSet(map, "1", "foo");
+	ish_MapSet(map, "2", "bar");
+	ish_MapFree(map);
+	map = NULL;
+```
+
+### ish_MapGet(map, key)
+
+Returns the value from **key** in the **map**.
+
+```c
+	ish_Map *map = ish_MapNew();
+	ish_MapSet(map, "1", "foo");
+	char *msg = (char *) ish_MapGet(map, "1");
+	ish_MapSet(map, "2", "bar");
+	puts(msg);	//prints "foo"
+```
+
+### ish_MapGrow(map)
+
+Rehash the **map** with a larger array of internal buckets. Returns the address of the new `map` if it was successful, otherwise it will return the address of the old one.
+
+This is typically done to speed up access to the `key-value` pairs if you have a lot floating around in memory.
+
+```c
+	ish_Map *map = ish_MapNew();
+	ish_MapGrow(map);
+```
+
+### ish_MapNew()
+
+We allocate, initialise and return an addres to the new ish_Map if successful. Otherwise we return `NULL`.
+
+```c
+	ish_Map *map = ish_MapNew();
+```
+
+### ish_MapProbePairs(map, func, probe)
+
+In **map** we iterate over all of the `key-value pairs` and call **func** on each.
+
+The signature for **func** is `int func(char *[key], void *[value], void *[probe])`
+   - **key** is the key of the `key-value pair`.
+   - **value** is the value of the `key-value pair`.
+   - **probe** is a pointer to an object that you want passing when **func** is called.
+
+### ish_MapRemove(map, key)
+
+Deletes (i.e completely deallocates) the `key-value pair`.
+
+```c
+	puts(ish_MapGet(map, "matthew"));	// prints "hi"
+	ish_MapRemove(map, "matthew");
+	puts(ish_MapGet(map, "matthew"));	// prints "(null)"
+```
+
+### ish_MapSet(map, key, value)
+
+In **map** we set `key-value pair` **key** to have **value** as its value.
+
+This is a macro for `ish_MapSetWithDestruct` with **destruct** set to `NULL`.
+
+```c
+	ish_Map *map = ish_MapNew();
+	ish_MapSet(map, "1", "foo");
+```
+
+### ish_MapSetWithDestruct(map, key, value, destruct)
+
+In **map** we set `key-value pair` **key** to have **value** as its value and **destruct** as its `destructor`.
+
+When `ish_MapSet`, `ish_MapRemove` and `ish_MapFree` are called on a **key** with its `destructor` set, then **destruct** will be called on **value**.
+
+The signature for **destruct** is `int func(void *)`
+
+### ish_MapShrink(map)
+
+Rehash the **old** with a smaller array of internal buckets. Returns the address of the new `map` if successful, otherwise it will return the address of the old one.
+
+```c
+	ish_Map *map = ish_MapNew();
+	ish_MapShrink(map);
+```
+
+
+
 ## License
 
 ```
