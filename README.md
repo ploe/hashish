@@ -12,8 +12,8 @@ To use `hashish` first you must clone the repo (if you're reading this you're lo
 
 Once the library has been built you can include it in your C apps by pointing to the repo when compiling, for example: 
 
-```
-cc -O2 -I./murmur3 hashish/hashish.o main.c -o main
+```bash
+cc -I./hashish ./hashish/hashish.o src.c -o app
 ```
 
 There is a bundled example app that you can build by doing a `make dev` - should you be so inclined. Its code in `main.c` may be helpful in getting started with this library.
@@ -23,7 +23,7 @@ There is a bundled example app that you can build by doing a `make dev` - should
 Include the library.
 
 ```c
-#include "hashish"
+#include "hashish.h"
 ```
 
 The basic type in hashish is an `ish_Map` to create one you need to use the `ish_MapNew` function. See below.
@@ -58,19 +58,19 @@ To pull the values out of `map` we use the `ish_MapGet` function.
 
 ```c
 	char *msg = (char *) ish_MapGet(map, "ringo");
-	printf("%s, world", msg);
+	printf("%s, world", msg);		// prints "hullo, world"
 ```
 
 If you don't like what you put in the `map` you can always overwrite it with another `ish_MapSet` or get rid of it completely with an `ish_MapRemove`
 
 ```c
-	puts(ish_MapGet(map, "mark"));		// returns "hiya"
+	puts(ish_MapGet(map, "mark"));		// prints "hiya"
 	ish_MapSet(map, mark, "bye");
-	puts(ish_MapGet(map, "mark"));		// returns "bye"
+	puts(ish_MapGet(map, "mark"));		// prints "bye"
 
-	puts(ish_MapGet(map, "matthew"));	// returns "hi"
+	puts(ish_MapGet(map, "matthew"));	// prints "hi"
 	ish_MapRemove(map, "matthew");
-	puts(ish_MapGet(map, "matthew"));	// returns "(null)"
+	puts(ish_MapGet(map, "matthew"));	// prints "(null)"
 ```
 
 Once you're done with the `map` you can deallocate it and its `key-value pairs` by using the `ish_MapFree` function.
