@@ -155,9 +155,9 @@ ish_Map *ish_MapShrink(ish_Map *old) {
 
 int ish_MapRemove(ish_Map *map, char *key) {
 	ish_KVPair *pair = FindPair(map, key);
-	if (!pair) return 0;
+	if (!pair) return ish_FAIL;
 	KVPairFree(map, pair);	
-	return 1;
+	return ish_SUCCESS;
 }
 
 /*	ish_MapSetWithDestruct (public):
@@ -221,11 +221,59 @@ void ish_MapFree(ish_Map *map) {
 }
 
 /*	ish_MapGet (public):
-	Returns the value from [key] in the [map].	*/
+	Returns the value from [key] in the [map].
+	The callback [get] for that KVPair will be called.
+
+	This can be used to implement reference counting.	*/
 
 void *ish_MapGet(ish_Map *map, char *key) {
 	ish_KVPair *pair = FindPair(map, key);
-	if (pair) return pair->value;
+
+	if (pair) {
+		if (pair->get) return pair->get(map, key, pair->value);
+		return pair->value;
+	}
+
 	return NULL;
 }
+
+/*      ish_MapDrop (public):
+        Returns the value from [key] in the [map].
+        The callback [drop] for that KVPair will be called.
+
+        This can be used to implement reference counting.       */
+
+void *ish_MapDrop(ish_Map *map, char *key) {
+        ish_KVPair *pair = FindPair(map, key);
+
+        if (pair) {
+                if (pair->drop) return pair->drop(map, key, pair->value);
+                return pair->value;
+        }
+
+        return NULL;
+}
+
+int ish_MapOnGet(ish_Map *map, char *key, ish_Allocator get) {
+	ish_KVPair *pair = FindPair(map, key);
+	
+	if (pair) {
+		pair->get = get;
+		return ish_SUCCESS;
+	}
+
+	return ish_FAIL;
+}
+
+int ish_MapOnDrop(ish_Map *map, char *key, ish_Allocator drop) {
+	ish_KVPair *pair = FindPair(map, key);
+	
+	if (pair) {
+		pair->drop = drop;
+		return ish_SUCCESS;
+	}
+
+	return ish_FAIL;
+}
+
 

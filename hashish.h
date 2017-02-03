@@ -17,6 +17,10 @@ extern "C" {
 #define ish_UINT128_LENGTH (sizeof(uint64_t)*2)
 #define ish_DEFAULT_MASK 0x0F
 
+typedef struct ish_Map ish_Map;
+
+typedef void *(*ish_Allocator)(ish_Map *map, char *key, void *value);
+
 /*	ish_KVPair:
 	struct that represents a key/value pair in the Map. A key value
 	pair has 3 attributes associated with it.
@@ -35,6 +39,7 @@ typedef struct ish_KVPair {
 	char *key;
 	void *value;
 	int (*destruct)(void *);
+	ish_Allocator get, drop;
 	struct ish_KVPair *prev, *next;	
 } ish_KVPair;
 
@@ -48,6 +53,11 @@ typedef struct ish_Map {
 	ish_KVPair **buckets;
 	uint64_t mask;
 } ish_Map;
+
+enum {
+	ish_SUCCESS = -1,
+	ish_FAIL
+};
 
 /*	ish_Map methods.	*/
 ish_Map *ish_MapNewWithMask(uint64_t mask);
