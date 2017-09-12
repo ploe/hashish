@@ -57,9 +57,6 @@ static ish_KVPair *KVPairNew(ish_Map *map, char *key) {
 }
 
 static void KVPairFree(ish_Map *map, ish_KVPair *pair) {
-	/* 	call the remove method if we have one	*/
-	if (pair->remove) pair->remove(map, pair->key, pair->value);
-
 	/*	destroy the key	*/
 	free(pair->key);
 
@@ -123,16 +120,47 @@ int ish_CopyMap(ish_Map *old, ish_Map *new) {
 	return 1;
 }
 
+
+static void MapFreeBuckets(ish_Map *map) {
+	int i;
+	for (i = 0; i <= map->mask; i++) {
+		ish_KVPair *pair, *next;
+		for (pair = map->buckets[i]; pair != NULL; pair = next) {
+			next = pair->next;
+			KVPairFree(map, pair);
+		}
+	}
+	free(map->buckets);
+	free(map);
+}
+
+static void MapRemoveAll(ish_Map *map) {
+	int i;
+	for (i = 0; i <= map->mask; i++) {
+		ish_KVPair *pair;
+		for (pair = map->buckets[i]; pair != NULL; pair = pair->next)
+			if (pair->remove) pair->remove(map, pair->key, pair->value);
+	}
+}
+
+/*	ish_MapFree (public):
+	Purges all the KVPairs from the [map] and then deallocates it.	*/
+
+void ish_MapFree(ish_Map *map) {
+	MapRemoveAll(map);
+	MapFreeBuckets(map);
+}
+
 static ish_Map *MapRehash(ish_Map *old, uint64_t mask) {
 	ish_Map *new = ish_MapNewWithMask(mask);
 	if (!new) return old;
 
 	if(!ish_CopyMap(old, new)) {
-		ish_MapFree(new);
+		MapFreeBuckets(new);
 		return old;
 	}
 
-	ish_MapFree(old);
+	MapFreeBuckets(old);
 	return new;
 }
 
@@ -157,7 +185,10 @@ ish_Map *ish_MapShrink(ish_Map *old) {
 int ish_MapRemove(ish_Map *map, char *key) {
 	ish_KVPair *pair = FindPair(map, key);
 	if (!pair) return ish_FAIL;
-	KVPairFree(map, pair);	
+
+	if (pair->remove) pair->remove(map, pair->key, pair->value);
+	KVPairFree(map, pair);
+
 	return ish_SUCCESS;
 }
 
@@ -211,21 +242,6 @@ void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *
 	}
 }
 
-/*	ish_MapFree (public):
-	Purges all the KVPairs from the [map] and then deallocates it.	*/
-
-void ish_MapFree(ish_Map *map) {
-	int i;
-	for (i = 0; i <= map->mask; i++) {
-		ish_KVPair *pair, *next;
-		for (pair = map->buckets[i]; pair != NULL; pair = next) {
-			next = pair->next;
-			KVPairFree(map, pair);
-		}
-	}
-	free(map->buckets);
-	free(map);
-}
 
 /*	ish_MapGet (public):
 	Returns the value from [key] in the [map].

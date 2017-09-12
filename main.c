@@ -7,9 +7,52 @@ int printkv(char *key, void *value, void *probe) {
 }
 
 void *saybye(ish_Map *map, char *key, void *value) {
-	printf("%s says goodbye\n", (char *) value);
+	printf("'%s => %s' says goodbye\n", (char *) key, (char *) value);
 	puts(key);
 	return NULL;
+}
+
+typedef struct Smartref {
+	unsigned int rc;
+	char *value;
+} Smartref;
+
+void *SmartrefGet(ish_Map *map, char *key, void *value) {
+	Smartref *ref = (Smartref *) value;
+	ref->rc++;
+	printf("%s => %s: %d\n", key, ref->value, ref->rc);
+
+	return value;
+}
+
+void *SmartrefDrop(ish_Map *map, char *key, void *value) {
+	Smartref *ref = (Smartref *) value;
+	ref->rc--;
+	printf("%s => %s: %d\n", key, ref->value, ref->rc);
+	if (ref->rc <= 0) {
+		ish_MapRemove(map, key);
+		return NULL;
+	}
+	
+	return value;
+}
+
+void *SmartrefRemove(ish_Map *map, char *key, void *value) {
+	Smartref *ref = (Smartref *) value;
+	printf("Smartref '%s => %s' removed at: %d\n", key, ref->value, ref->rc);
+	free(value);
+	return NULL;
+}
+
+Smartref *SmartrefNew(ish_Map *map, char *key, void *value) {
+	Smartref *ref = calloc(1, sizeof(Smartref));
+	ref->rc = 1;
+	ref->value = value;
+	printf("%s => %s: %d\n", key, ref->value, ref->rc);
+
+	ish_MapSetWithAllocators(map, key, (void *) ref, SmartrefGet, SmartrefDrop, SmartrefRemove);
+
+	return ref;
 }
 
 int main(int argc, char *argv[]) {
@@ -18,6 +61,18 @@ int main(int argc, char *argv[]) {
 	ish_MapSet(map, "myke", "Myke");
 	ish_MapSet(map, "is", "waaaagh");
 	ish_MapSet(map, "1", "john");
+
+	SmartrefNew(map, "smartref", ";)");
+	ish_MapGet(map, "smartref");
+	ish_MapGet(map, "smartref");
+	ish_MapGet(map, "smartref");
+	ish_MapGet(map, "smartref");
+	ish_MapDrop(map, "smartref");
+	ish_MapDrop(map, "smartref");
+	ish_MapDrop(map, "smartref");
+	ish_MapDrop(map, "smartref");
+	ish_MapDrop(map, "smartref");
+
 	ish_MapSet(map, "2", "paul");
 	ish_MapSet(map, "3", "george");
 	ish_MapSet(map, "4", "ringo");

@@ -12,7 +12,6 @@ extern "C" {
 
 #include "murmur3.h"
 
-
 #define ish_UINT128_LENGTH (sizeof(uint64_t)*2)
 #define ish_DEFAULT_MASK 0x0F
 
@@ -71,10 +70,8 @@ void *ish_MapGet(ish_Map *map, char *key);
 void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *probe);
 #define ish_MapForPairs(key, value) ish_MapProbePairs(key, value, NULL)
 
-
 ish_Map *ish_MapGrow(ish_Map *old);
 ish_Map *ish_MapShrink(ish_Map *old);
-
 
 int ish_MapOnGet(ish_Map *map, char *key, ish_Allocator get);
 int ish_MapOnDrop(ish_Map *map, char *key, ish_Allocator drop);
