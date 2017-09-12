@@ -6,6 +6,12 @@ int printkv(char *key, void *value, void *probe) {
 	return 0;
 }
 
+void *saybye(ish_Map *map, char *key, void *value) {
+	printf("%s says goodbye\n", (char *) value);
+	puts(key);
+	return NULL;
+}
+
 int main(int argc, char *argv[]) {
 	ish_Map *map = ish_MapNew();
 	ish_MapSet(map, "hello world", "nah not really");
@@ -31,6 +37,8 @@ int main(int argc, char *argv[]) {
 	ish_MapRemove(map, "7");
 	ish_MapRemove(map, "8");
 	ish_MapRemove(map, "9");
+
+	ish_MapOnRemove(map, "14", saybye);
 	
 	printf("what in 7? \"%s\"\n", (char *) ish_MapGet(map, "7"));
 	printf("what's in 17? \"%s\"\n", (char *) ish_MapGet(map, "17"));

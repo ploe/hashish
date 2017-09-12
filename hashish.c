@@ -57,11 +57,12 @@ static ish_KVPair *KVPairNew(ish_Map *map, char *key) {
 }
 
 static void KVPairFree(ish_Map *map, ish_KVPair *pair) {
+	/* 	call the remove method if we have one	*/
+	if (pair->remove) pair->remove(map, pair->key, pair->value);
+
 	/*	destroy the key	*/
 	free(pair->key);
 
-	/* 	deallocate the value if we have a destructor	*/
-	if (pair->destruct) pair->destruct(pair->value);
 
 	/*	rewire the pairs in the map	*/
 	if (pair->prev) pair->prev->next = pair->next;
@@ -107,8 +108,8 @@ ish_Map *ish_MapNewWithMask(uint64_t mask) {
 /*	ish_CopyMap (public):
 	Copy the contents on one [old] in to [new].	
 
-	Any values that are in [new] that are overwritten will have the
-	destructors called for them. Any values that aren't will remain
+	Any values that are in [new] that are overwritten will have
+	remove called for them. Any values that aren't will remain
 	in memory, untouched.	*/
 
 int ish_CopyMap(ish_Map *old, ish_Map *new) {
@@ -116,7 +117,7 @@ int ish_CopyMap(ish_Map *old, ish_Map *new) {
 	for (i = 0; i <= old->mask; i++) {
 		ish_KVPair *pair;
 		for (pair = old->buckets[i]; pair != NULL; pair = pair->next) {
-			if(!ish_MapSetWithDestruct(new, pair->key, pair->value, pair->destruct)) return 0;
+			if(!ish_MapSetWithAllocators(new, pair->key, pair->value, pair->get, pair->drop, pair->remove)) return 0;
 		}
 	}
 	return 1;
@@ -160,20 +161,26 @@ int ish_MapRemove(ish_Map *map, char *key) {
 	return ish_SUCCESS;
 }
 
-/*	ish_MapSetWithDestruct (public):
+/*	ish_MapSetWithAllocators (public):
 	In [map] we set KVPair [key] to have [value] as its value and
-	[destruct] as its destruct.
+	[get] is its get method.
+	[drop] is its drop method.
+	[remove] is its remove method.
 
-	As part of the library there is a macro ish_SetMap, which passes a NULL 
-	destruct.	*/
+	As part of the library there is a macro ish_SetMap, which passes 
+	NULL to all the methods.	*/
 
-int ish_MapSetWithDestruct(ish_Map *map, char *key, void *value, int (*destruct)(void *)) {
+int ish_MapSetWithAllocators(ish_Map *map, char *key, void *value, ish_Allocator get, ish_Allocator drop, ish_Allocator remove) {
 	ish_KVPair *pair;
 	if ((pair = FindPair(map, key)) == NULL) pair = KVPairNew(map, key);
 	if (pair) {
-		if (pair->value && pair->destruct) pair->destruct(pair->value);
+		if (pair->value && pair->remove) pair->remove(map, key, pair->value);
+
+			
 		pair->value = value;
-		pair->destruct = destruct;
+		pair->get = get;
+		pair->drop = drop;
+		pair->remove = remove;
 		return 1;
 	}
 	return 0;
@@ -276,4 +283,14 @@ int ish_MapOnDrop(ish_Map *map, char *key, ish_Allocator drop) {
 	return ish_FAIL;
 }
 
+int ish_MapOnRemove(ish_Map *map, char *key, ish_Allocator remove) {
+	ish_KVPair *pair = FindPair(map, key);
+	
+	if (pair) {
+		pair->remove = remove;
+		return ish_SUCCESS;
+	}
+
+	return ish_FAIL;
+}
 

@@ -9,7 +9,6 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "murmur3.h"
 
@@ -30,16 +29,14 @@ typedef void *(*ish_Allocator)(ish_Map *map, char *key, void *value);
 
 	[value] - void * pointing to the object we want to store in the Map. 
 
-	[destruct] - function pointer to a destructor function. The 
-	function takes a void * as a param. This will be [value] in the 
-	KVPair. 	*/
+	[remove] - function pointer to the remove method.
+*/
 
 typedef struct ish_KVPair {
 	uint64_t hash[2];
 	char *key;
 	void *value;
-	int (*destruct)(void *);
-	ish_Allocator get, drop;
+	ish_Allocator get, drop, remove;
 	struct ish_KVPair *prev, *next;	
 } ish_KVPair;
 
@@ -66,8 +63,8 @@ void ish_MapFree(ish_Map *map);
 
 int ish_MapRemove(ish_Map *map, char *key);
 
-int ish_MapSetWithDestruct(ish_Map *map, char *key, void *value, int (*destruct)(void *));
-#define ish_MapSet(map, key, value) ish_MapSetWithDestruct(map, key, value, NULL)
+int ish_MapSetWithAllocators(ish_Map *map, char *key, void *value, ish_Allocator get, ish_Allocator drop, ish_Allocator remove);
+#define ish_MapSet(map, key, value) ish_MapSetWithAllocators(map, key, value, NULL, NULL, NULL)
 
 void *ish_MapGet(ish_Map *map, char *key);
 
@@ -77,6 +74,11 @@ void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *
 
 ish_Map *ish_MapGrow(ish_Map *old);
 ish_Map *ish_MapShrink(ish_Map *old);
+
+
+int ish_MapOnGet(ish_Map *map, char *key, ish_Allocator get);
+int ish_MapOnDrop(ish_Map *map, char *key, ish_Allocator drop);
+int ish_MapOnRemove(ish_Map *map, char *key, ish_Allocator remove);
 
 #endif
 
