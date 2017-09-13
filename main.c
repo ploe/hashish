@@ -30,18 +30,12 @@ void *SmartrefDrop(ish_Map *map, char *key, void *value) {
 	ref->rc--;
 	printf("%s => %s: %d\n", key, ref->value, ref->rc);
 	if (ref->rc <= 0) {
-		ish_MapRemove(map, key);
+		printf("Dropped at: %s => %s: %d\n", key, ref->value, ref->rc);
+		free(value);
 		return NULL;
 	}
 	
 	return value;
-}
-
-void *SmartrefRemove(ish_Map *map, char *key, void *value) {
-	Smartref *ref = (Smartref *) value;
-	printf("Smartref '%s => %s' removed at: %d\n", key, ref->value, ref->rc);
-	free(value);
-	return NULL;
 }
 
 Smartref *SmartrefNew(ish_Map *map, char *key, void *value) {
@@ -50,7 +44,7 @@ Smartref *SmartrefNew(ish_Map *map, char *key, void *value) {
 	ref->value = value;
 	printf("%s => %s: %d\n", key, ref->value, ref->rc);
 
-	ish_MapSetWithAllocators(map, key, (void *) ref, SmartrefGet, SmartrefDrop, SmartrefRemove);
+	ish_MapSetWithAllocators(map, key, (void *) ref, SmartrefGet, SmartrefDrop);
 
 	return ref;
 }
@@ -92,8 +86,6 @@ int main(int argc, char *argv[]) {
 	ish_MapRemove(map, "7");
 	ish_MapRemove(map, "8");
 	ish_MapRemove(map, "9");
-
-	ish_MapOnRemove(map, "14", saybye);
 	
 	printf("what in 7? \"%s\"\n", (char *) ish_MapGet(map, "7"));
 	printf("what's in 17? \"%s\"\n", (char *) ish_MapGet(map, "17"));
@@ -115,5 +107,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	ish_MapFree(map);
+
+	printf("%d\n", sizeof(ish_KVPair));
 	return 0;
 }

@@ -114,19 +114,22 @@ int ish_CopyMap(ish_Map *old, ish_Map *new) {
 	for (i = 0; i <= old->mask; i++) {
 		ish_KVPair *pair;
 		for (pair = old->buckets[i]; pair != NULL; pair = pair->next) {
-			if(!ish_MapSetWithAllocators(new, pair->key, pair->value, pair->get, pair->drop, pair->remove)) return 0;
+			if(!ish_MapSetWithAllocators(new, pair->key, pair->value, pair->get, pair->drop)) return 0;
 		}
 	}
 	return 1;
 }
 
-
-static void MapFreeBuckets(ish_Map *map) {
+/*	ish_MapFree (public):
+	Purges all the KVPairs from the [map] and then deallocates it.	
+	Calls drop on every element. */
+void ish_MapFree(ish_Map *map) {
 	int i;
 	for (i = 0; i <= map->mask; i++) {
 		ish_KVPair *pair, *next;
 		for (pair = map->buckets[i]; pair != NULL; pair = next) {
 			next = pair->next;
+			if (pair->drop) pair->drop(map, pair->key, pair->value);
 			KVPairFree(map, pair);
 		}
 	}
@@ -134,33 +137,16 @@ static void MapFreeBuckets(ish_Map *map) {
 	free(map);
 }
 
-static void MapRemoveAll(ish_Map *map) {
-	int i;
-	for (i = 0; i <= map->mask; i++) {
-		ish_KVPair *pair;
-		for (pair = map->buckets[i]; pair != NULL; pair = pair->next)
-			if (pair->remove) pair->remove(map, pair->key, pair->value);
-	}
-}
-
-/*	ish_MapFree (public):
-	Purges all the KVPairs from the [map] and then deallocates it.	*/
-
-void ish_MapFree(ish_Map *map) {
-	MapRemoveAll(map);
-	MapFreeBuckets(map);
-}
-
 static ish_Map *MapRehash(ish_Map *old, uint64_t mask) {
 	ish_Map *new = ish_MapNewWithMask(mask);
 	if (!new) return old;
 
 	if(!ish_CopyMap(old, new)) {
-		MapFreeBuckets(new);
+		ish_MapFree(new);
 		return old;
 	}
 
-	MapFreeBuckets(old);
+	ish_MapFree(old);
 	return new;
 }
 
@@ -186,8 +172,9 @@ int ish_MapRemove(ish_Map *map, char *key) {
 	ish_KVPair *pair = FindPair(map, key);
 	if (!pair) return ish_FAIL;
 
-	if (pair->remove) pair->remove(map, pair->key, pair->value);
-	KVPairFree(map, pair);
+	if (pair->drop) {
+		if (pair->drop(map, pair->key, pair->value)) KVPairFree(map, pair);
+	}
 
 	return ish_SUCCESS;
 }
@@ -201,17 +188,16 @@ int ish_MapRemove(ish_Map *map, char *key) {
 	As part of the library there is a macro ish_SetMap, which passes 
 	NULL to all the methods.	*/
 
-int ish_MapSetWithAllocators(ish_Map *map, char *key, void *value, ish_Allocator get, ish_Allocator drop, ish_Allocator remove) {
+int ish_MapSetWithAllocators(ish_Map *map, char *key, void *value, ish_Allocator get, ish_Allocator drop) {
 	ish_KVPair *pair;
 	if ((pair = FindPair(map, key)) == NULL) pair = KVPairNew(map, key);
 	if (pair) {
-		if (pair->value && pair->remove) pair->remove(map, key, pair->value);
+		if (pair->value && pair->drop) pair->drop(map, key, pair->value);
 
 			
 		pair->value = value;
 		pair->get = get;
 		pair->drop = drop;
-		pair->remove = remove;
 		return 1;
 	}
 	return 0;
@@ -270,8 +256,12 @@ void *ish_MapDrop(ish_Map *map, char *key) {
         ish_KVPair *pair = FindPair(map, key);
 
         if (pair) {
-                if (pair->drop) return pair->drop(map, key, pair->value);
-                return pair->value;
+                if (!pair->drop) return pair->value;
+
+		void *alive = pair->drop(map, key, pair->value);
+		if (alive) return alive;
+
+		KVPairFree(map, pair);
         }
 
         return NULL;
@@ -293,17 +283,6 @@ int ish_MapOnDrop(ish_Map *map, char *key, ish_Allocator drop) {
 	
 	if (pair) {
 		pair->drop = drop;
-		return ish_SUCCESS;
-	}
-
-	return ish_FAIL;
-}
-
-int ish_MapOnRemove(ish_Map *map, char *key, ish_Allocator remove) {
-	ish_KVPair *pair = FindPair(map, key);
-	
-	if (pair) {
-		pair->remove = remove;
 		return ish_SUCCESS;
 	}
 

@@ -35,7 +35,7 @@ typedef struct ish_KVPair {
 	uint64_t hash[2];
 	char *key;
 	void *value;
-	ish_Allocator get, drop, remove;
+	ish_Allocator get, drop;
 	struct ish_KVPair *prev, *next;	
 } ish_KVPair;
 
@@ -62,8 +62,8 @@ void ish_MapFree(ish_Map *map);
 
 int ish_MapRemove(ish_Map *map, char *key);
 
-int ish_MapSetWithAllocators(ish_Map *map, char *key, void *value, ish_Allocator get, ish_Allocator drop, ish_Allocator remove);
-#define ish_MapSet(map, key, value) ish_MapSetWithAllocators(map, key, value, NULL, NULL, NULL)
+int ish_MapSetWithAllocators(ish_Map *map, char *key, void *value, ish_Allocator get, ish_Allocator drop);
+#define ish_MapSet(map, key, value) ish_MapSetWithAllocators(map, key, value, NULL, NULL)
 
 void *ish_MapGet(ish_Map *map, char *key);
 
@@ -75,7 +75,6 @@ ish_Map *ish_MapShrink(ish_Map *old);
 
 int ish_MapOnGet(ish_Map *map, char *key, ish_Allocator get);
 int ish_MapOnDrop(ish_Map *map, char *key, ish_Allocator drop);
-int ish_MapOnRemove(ish_Map *map, char *key, ish_Allocator remove);
 
 #endif
 
