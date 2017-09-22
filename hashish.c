@@ -6,7 +6,7 @@
 	Uses Murmur3 to convert a [key] in to a new [hash]	*/
 
 static void SetHash(char *key, void *out) {
-	MurmurHash3_x64_128(key, strlen(key), getpid(), out);
+	MurmurHash3_x64_128(key, strlen(key), 0, out);
 }
 
 static uint64_t GetIndex(uint64_t hash[2], uint64_t mask) {
@@ -72,12 +72,6 @@ static void KVPairFree(ish_Map *map, ish_KVPair *pair) {
 	if (pair->next) pair->next->prev = pair->prev;
 
 	free(pair);
-}
-
-/*	KVPairMarshal:
-	Print important information about the KVPair to stderr. Used for debug stuff.	*/
-static void KVPairMarshal(ish_KVPair *pair) {
-	fprintf(stderr, "key:%s,address:%x,value:%x,prev:%x,next:%x,\n", pair->key, (int) pair, (int) pair->value, (int) pair->prev, (int) pair->next);
 }
 
 /*	ish_Map methods.	*/
