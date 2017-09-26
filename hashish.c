@@ -1,5 +1,6 @@
 #include "hashish.h"
 
+#include "murmur3.h"
 /*	KVPair methods	*/
 
 /*	SetHash.

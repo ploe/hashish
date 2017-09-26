@@ -79,6 +79,108 @@ Once you're done with the `map` you can deallocate it and its `key-value pairs` 
 	ish_MapFree(map);
 ```
 
+## What are Allocator functions?
+
+The library doesn't implement garbage collection, but it provides a pair of callback functions for each `key-value pair` - these are called by `ish_MapGet` and `ish_MapDrop`.
+
+Below is the `typedef` for the `ish_Allocator` signature. They are return a `void *` which should be the value in the `key-value pair`. Their arguments are an `ish_Map *` which is the pointer to the map we're operating on, a `char *` which is the `key` and a `void *` which is the value.
+
+```c
+	typedef void *(*ish_Allocator)(ish_Map *map, char *key, void *value);
+```
+
+Functions that call the `drop Allocator` include `ish_MapFree`, `ish_MapRemove`, `ish_MapSet` and `ish_MapSetWithAllocators`. 
+
+Only `ish_MapGet` calls the `get Allocator`.
+
+With these primitives you can roll you own garbage collection around the structures in the map.
+
+Here is an example type from `main.c` called `Smartref` which illustrates how something like this could be done.
+
+```c
+typedef struct Smartref {
+	unsigned int rc;
+	char *value;
+} Smartref;
+
+```
+
+`Smartref` has two attributes. An `unsigned int` called `rc` which stands for reference count. This is used to keep track of the number of references to this object the program has checked out with `ish_MapGet`. `char *value` represents the value of the object. In this case it's a char array.
+
+When `ish_MapGet` is called we want `rc` to increment, so that the app knows how many instances of the reference are floating in memory somewhere.
+
+```c
+void *SmartrefGet(ish_Map *map, char *key, void *value) {
+	Smartref *ref = (Smartref *) value;
+	ref->rc++;
+	printf("%s => %s: %d\n", key, ref->value, ref->rc);
+
+	return value;
+}
+```
+
+When `ish_MapDrop` is called we want to remove the value and free up the associated memory. Returning `NULL` tells `hashish` the value in the map should be empty, so it ensues to free the `key-value pair from memory.`
+
+```c
+void *SmartrefDrop(ish_Map *map, char *key, void *value) {
+	Smartref *ref = (Smartref *) value;
+	ref->rc--;
+	printf("%s => %s: %d\n", key, ref->value, ref->rc);
+	if (ref->rc <= 0) {
+		printf("Dropped at: %s => %s: %d\n", key, ref->value, ref->rc);
+		free(value);
+		return NULL;
+	}
+	
+	return value;
+}
+```
+
+Below is an example constructor which is used to allocate and initialise our `Smartref` type.
+
+```c
+Smartref *SmartrefNew(ish_Map *map, char *key, void *value) {
+	Smartref *ref = calloc(1, sizeof(Smartref));
+	ref->rc = 1;
+	ref->value = value;
+	printf("%s => %s: %d\n", key, ref->value, ref->rc);
+
+	ish_MapSetWithAllocators(map, key, (void *) ref, SmartrefGet, SmartrefDrop);
+
+	return ref;
+}
+
+```
+
+In then gets called as below:
+
+```c
+	SmartrefNew(map, "smartref", ";)");
+	ish_MapGet(map, "smartref");
+	ish_MapGet(map, "smartref");
+	ish_MapGet(map, "smartref");
+	ish_MapDrop(map, "smartref");
+	ish_MapDrop(map, "smartref");
+	ish_MapDrop(map, "smartref");
+	ish_MapDrop(map, "smartref");
+```
+
+Which gives us the following output.
+
+```c
+smartref => ;): 1
+smartref => ;): 2
+smartref => ;): 3
+smartref => ;): 4
+smartref => ;): 3
+smartref => ;): 2
+smartref => ;): 1
+smartref => ;): 0
+Dropped at: smartref => ;): 0
+```
+
+These functions allow you degree of control over whether you want memory freeing up or retaining when using `hashish`.
+
 ## Methods
 
 ### void ish_MapForPairs(ish_Map \*map, int (\*func)(char \*, void \*, void \*));
@@ -167,14 +269,6 @@ This is a macro for `ish_MapSetWithDestruct` with **destruct** set to `NULL`.
 	ish_MapSet(map, "1", "foo");
 ```
 
-### int ish_MapSetWithDestruct(ish_Map \*map, char \*key, void \*value, int (\*destruct)(void \*));
-
-In **map** we set `key-value pair` **key** to have **value** as its value and **destruct** as its `destructor`.
-
-When `ish_MapSet`, `ish_MapRemove` and `ish_MapFree` are called on a **key** with its `destructor` set, then **destruct** will be called on **value**.
-
-The signature for **destruct** is `int func(void *)`
-
 ### ish_Map \*ish_MapShrink(ish_Map \*old);
 
 Rehash the **old** with a smaller array of internal buckets. Returns the address of the new `map` if successful, otherwise it will return the address of the old one.
@@ -187,7 +281,7 @@ Rehash the **old** with a smaller array of internal buckets. Returns the address
 ## License
 
 ```
-Copyright (c) 2016, Myke Atkinson
+Copyright (c) 2016-2017, Myke Atkinson
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

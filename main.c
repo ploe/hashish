@@ -60,8 +60,6 @@ int main(int argc, char *argv[]) {
 	ish_MapGet(map, "smartref");
 	ish_MapGet(map, "smartref");
 	ish_MapGet(map, "smartref");
-	ish_MapGet(map, "smartref");
-	ish_MapDrop(map, "smartref");
 	ish_MapDrop(map, "smartref");
 	ish_MapDrop(map, "smartref");
 	ish_MapDrop(map, "smartref");
