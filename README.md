@@ -79,7 +79,7 @@ Once you're done with the `map` you can deallocate it and its `key-value pairs` 
 	ish_MapFree(map);
 ```
 
-## What are Allocator functions?
+## What are ish_Allocator functions?
 
 The library doesn't implement garbage collection, but it provides a pair of callback functions for each `key-value pair` - these are called by `ish_MapGet` and `ish_MapDrop`.
 
@@ -183,6 +183,17 @@ These functions give you control over whether you want memory freeing up or reta
 
 ## Methods
 
+
+### void \*ish_MapDrop(ish_Map \*map, char \*key)
+
+Calls the `ish_Allocator` `drop` on the `key-value pair`.
+
+```c
+
+	ish_MapDrop(map, "smartref");
+```
+
+
 ### void ish_MapForPairs(ish_Map \*map, int (\*func)(char \*, void \*, void \*));
 
 In **map** we iterate over all of the `key-value pairs` and call **func** on each.
@@ -198,7 +209,7 @@ This is a macro for `ish_MapProbePairs` but it sets the probe to NULL.
 
 Purges all the `key-value pairs` from the **map** and then deallocates it.
 
-If a destructor is set for the `key-value pair` it will be called before being deallocated.
+This will call the `ish_Allocator` **drop** on each `key-value paor` if it has been set.
 
 ```c
 	ish_Map *map = ish_MapNew();
@@ -210,7 +221,9 @@ If a destructor is set for the `key-value pair` it will be called before being d
 
 ### void \*ish_MapGet(ish_Map \*map, char \*key);
 
-Returns the value from **key** in the **map**.
+Returns the value from **key** in the **map**. 
+
+This will also call the `ish_Allocator` **get** if one is set on the `key-value pair`.
 
 ```c
 	ish_Map *map = ish_MapNew();
@@ -248,9 +261,16 @@ The signature for **func** is `int func(char *[key], void *[value], void *[probe
    - **value** is the value of the `key-value pair`.
    - **probe** is a pointer to an object that you want passing when **func** is called.
 
+### int ish_MapOnGet(ish_Map \*map, char \*key, ish_Allocator get);
+### int ish_MapOnDrop(ish_Map \*map, char \*key, ish_Allocator drop);
+
+In **map** sets the appropriate `ish_Allocator` - these can also be set at the same time as the **value** with `ish_MapSetWithAllocators`
+
+
+
 ### int ish_MapRemove(ish_Map \*map, char \*key);
 
-Deletes (i.e completely deallocates) the `key-value pair`.
+Deallocates the `key` and calls the `ish_Allocator` **drop** if it has been set.
 
 ```c
 	puts(ish_MapGet(map, "matthew"));	// prints "hi"
@@ -262,11 +282,23 @@ Deletes (i.e completely deallocates) the `key-value pair`.
 
 In **map** we set `key-value pair` **key** to have **value** as its value.
 
-This is a macro for `ish_MapSetWithDestruct` with **destruct** set to `NULL`.
+This will call the `ish_Allocator` **drop** if it has been set.
+
 
 ```c
 	ish_Map *map = ish_MapNew();
 	ish_MapSet(map, "1", "foo");
+```
+
+
+### int ish_MapSetWithAllocators(ish_Map \*map, char \*key, void \*value, ish_Allocator get, ish_Allocator drop)
+
+In **map** we set `key-value pair` **key** to have **value** as its value. It's `ish_Allocator` functions **set** and **drop** get set to their appropriate counterparts too.
+
+This will call the `ish_Allocator` **drop** if it has been set.
+
+```c
+	ish_MapSetWithAllocators(map, key, (void *) ref, SmartrefGet, SmartrefDrop);
 ```
 
 ### ish_Map \*ish_MapShrink(ish_Map \*old);
