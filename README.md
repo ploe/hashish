@@ -83,17 +83,17 @@ Once you're done with the `map` you can deallocate it and its `key-value pairs` 
 
 The library doesn't implement garbage collection, but it provides a pair of callback functions for each `key-value pair` - these are called by `ish_MapGet` and `ish_MapDrop`.
 
-Below is the `typedef` for the `ish_Allocator` signature. They are return a `void *` which should be the value in the `key-value pair`. Their arguments are an `ish_Map *` which is the pointer to the map we're operating on, a `char *` which is the `key` and a `void *` which is the value.
+Below is the `typedef` for the `ish_Allocator` signature. They return a `void *` which is the `value` in the `key-value pair`. Their arguments are an `ish_Map *` which is the map we're operating on, a `char *` which is the `key` and a `void *` which is the value.
 
 ```c
 	typedef void *(*ish_Allocator)(ish_Map *map, char *key, void *value);
 ```
 
-Functions that call the `drop Allocator` include `ish_MapFree`, `ish_MapRemove`, `ish_MapSet` and `ish_MapSetWithAllocators`. 
+The functions that call the `drop` include `ish_MapFree`, `ish_MapRemove`, `ish_MapSet` and `ish_MapSetWithAllocators`. 
 
-Only `ish_MapGet` calls the `get Allocator`.
+Only `ish_MapGet` calls the `get`.
 
-With these primitives you can roll you own garbage collection around the structures in the map.
+With these primitives you can roll you own garbage collection around the data in the map.
 
 Here is an example type from `main.c` called `Smartref` which illustrates how something like this could be done.
 
@@ -119,7 +119,7 @@ void *SmartrefGet(ish_Map *map, char *key, void *value) {
 }
 ```
 
-When `ish_MapDrop` is called we want to remove the value and free up the associated memory. Returning `NULL` tells `hashish` the value in the map should be empty, so it ensues to free the `key-value pair from memory.`
+When `ish_MapDrop` is called we want to remove the value and free up the associated memory. Returning `NULL` tells `hashish` the value in the map should be empty, so it ensues to free the `key-value pair` from memory.
 
 ```c
 void *SmartrefDrop(ish_Map *map, char *key, void *value) {
@@ -152,7 +152,7 @@ Smartref *SmartrefNew(ish_Map *map, char *key, void *value) {
 
 ```
 
-In then gets called as below:
+It then gets used in `main` as below:
 
 ```c
 	SmartrefNew(map, "smartref", ";)");
@@ -179,7 +179,7 @@ smartref => ;): 0
 Dropped at: smartref => ;): 0
 ```
 
-These functions allow you degree of control over whether you want memory freeing up or retaining when using `hashish`.
+These functions give you control over whether you want memory freeing up or retaining when using `hashish`. They enable you to wrap your own patterns around your data.
 
 ## Methods
 
