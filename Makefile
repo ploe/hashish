@@ -11,4 +11,4 @@ gdb-enabled:
 dev: gdb-enabled example
 
 example: 
-	cc -g -O2 -I./murmur3  hashish.o main.c -o main
+	cc -g -O2 -I./murmur3  hashish.o example.c -o example

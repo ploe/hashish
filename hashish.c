@@ -212,17 +212,16 @@ int ish_MapSetWithAllocators(ish_Map *map, char *key, void *value, ish_Allocator
 	There is a macro called ish_MapForPairs which calls this but 
 	probe is set to NULL	*/
 
-void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *probe) {
+void ish_MapProbePairs(ish_Map *map, ish_Iterator func, void *probe) {
 	if (!func) return;
 
 	int i;
 	for (i = 0; i <= map->mask; i++) {
 		ish_KVPair *pair;
 		for (pair = map->buckets[i]; pair != NULL; pair = pair->next)
-			func(pair->key, pair->value, probe);
+			func(map, pair->key, pair->value, probe);
 	}
 }
-
 
 /*	ish_MapGet (public):
 	Returns the value from [key] in the [map].

@@ -252,11 +252,11 @@ We allocate, initialise and return an addres to the new ish_Map if successful. O
 	ish_Map *map = ish_MapNew();
 ```
 
-### void ish_MapProbePairs(ish_Map \*map, int (\*func)(char \*, void \*, void \*), void \*probe);
+### void ish_MapProbePairs(ish_Map \*map, ish_Iterator func, void \*probe);
 
 In **map** we iterate over all of the `key-value pairs` and call **func** on each.
 
-The signature for **func** is `int func(char *[key], void *[value], void *[probe])`
+The signature for **func** is an `ish_Iterator` which is `int func(ish_Map *map, char *[key], void *[value], void *[probe])`
    - **key** is the key of the `key-value pair`.
    - **value** is the value of the `key-value pair`.
    - **probe** is a pointer to an object that you want passing when **func** is called.
