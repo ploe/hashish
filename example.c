@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "hashish.h"
 
-int printkv(char *key, void *value, void *probe) {
+void *printkv(ish_Map *map, char *key, void *value, void *probe) {
 	printf("'%s'=>'%s'\n", key, (char *)value);
 	return 0;
 }

@@ -16,6 +16,7 @@ extern "C" {
 typedef struct ish_Map ish_Map;
 
 typedef void *(*ish_Allocator)(ish_Map *map, char *key, void *value);
+typedef void *(*ish_Iterator)(ish_Map *map, char *key, void *value, void *probe);
 
 /*	ish_KVPair:
 	struct that represents a key/value pair in the Map. A key value
@@ -66,7 +67,7 @@ int ish_MapSetWithAllocators(ish_Map *map, char *key, void *value, ish_Allocator
 void *ish_MapGet(ish_Map *map, char *key);
 void *ish_MapDrop(ish_Map *map, char *key);
 
-void ish_MapProbePairs(ish_Map *map, int (*func)(char *, void *, void *), void *probe);
+void ish_MapProbePairs(ish_Map *map, ish_Iterator func, void *probe);
 #define ish_MapForPairs(key, value) ish_MapProbePairs(key, value, NULL)
 
 ish_Map *ish_MapGrow(ish_Map *old);
